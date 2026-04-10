@@ -5,13 +5,13 @@
 | 平台 | 支持语法 | 不支持 | 关键词策略 | 示例 |
 |------|---------|--------|-----------|------|
 | **猎聘** | 单关键词 + 标签匹配 | 复杂布尔运算 | 关键词简化（1-2个），依赖筛选器和标签 | `VLA 具身智能` |
-| **前程无忧** | 布尔运算（AND/OR/NOT）、高级搜索 | — | 关键词可复杂（3-4个 AND 组合） | `(深度学习 OR 机器学习) AND 芯片` |
+| **前程无忧** | 空格分隔关键词（松散 OR） | AND/OR/NOT 布尔运算（会被当成普通文本） | 2-3 个核心词，空格分隔，靠筛选器收窄 | `VLA 机器人` |
 | **Boss 直聘** | 关键词 + 筛选器组合 | 布尔运算、精确匹配 | 2-3个核心词，充分利用筛选器 | `VLA 机器人` |
 | **LinkedIn** | 字段搜索 + 布尔运算（最强大） | — | 可用 title/skills/education/company 等字段精确搜索 | `title:"工程师" AND skills:"Verilog" AND location:"北京"` |
 
 **Phase 1 生成搜索方案时，必须根据所选平台适配搜索语法：**
 - 猎聘 → 简化关键词，1-2 个词，其余条件靠筛选器
-- 前程无忧 → 充分利用 AND/OR/NOT 组合，关键词可以更精准
+- 前程无忧 → 2-3 个核心词空格分隔，不支持 AND/OR/NOT，靠筛选器收窄结果
 - Boss → 2-3 个核心词，不要堆太多
 - LinkedIn → 字段搜索语法，精确匹配
 
@@ -133,15 +133,53 @@ Array.from(document.querySelectorAll('.resumeCardWrap--FcnzW')).map((card, i) =>
 
 ### 基本导航
 - 企业端首页：`https://ehire.51job.com/`
-- 登录后进入人才搜索页面
+- 搜索页 URL：`https://ehire.51job.com/Revision/talent/search`
+- ⚠️ **搜索页必须从工作台左侧导航「人才搜索」进入**，直接用 URL 打开会得到空白 SPA 页面（0 个交互元素）
+- ⚠️ `/Revision/search/resumesearch` 和 `/Revision/search/resumelist` 也会空白
 
 ### 登录
 - 必须登录才能搜索人才
 - 登录方式：账号密码 / 手机验证码
 - agent-browser 操作：需用 `--headed` 模式打开浏览器让用户手动登录
+- 登录后从左侧导航菜单点击「人才搜索」进入搜索页
 
-### 页面操作地图
+### 搜索与筛选
+- 搜索输入框：标准 textbox，可直接 `fill` 输入（非 React 受控组件，比猎聘简单）
+- 搜索按钮：`page.getByRole('button', {name: '搜索'}).click()` 最可靠
+- ⚠️ **不支持 AND/OR/NOT 布尔搜索**，空格 = 松散 OR，`(具身智能 OR VLA)` 会被当成普通文本
+- 城市筛选：点「居住地」按钮弹窗，选城市后点「确定」
+- 其他筛选：工作年限、年龄、学历、学校性质等
+- ⚠️ snapshot 方式找搜索输入框/按钮 ref 不稳定（页面变化后 ref 失效），优先用 `getByRole` 定位
 
-*待实战验证后补充：选择器、搜索框操作、候选人卡片结构、详情页访问方式、分页逻辑等。*
+### 搜索词策略
 
-> 首次使用前程无忧执行寻访时，需通过 snapshot 和 eval 探索页面结构，将发现的选择器和操作方式记录于此。
+**51job 搜索语法特点：** 空格分隔 = 松散 OR，不支持布尔运算。
+
+| 搜索词 | 结果数 | 信噪比 | 推荐度 | 备注 |
+|--------|--------|--------|--------|------|
+| `VLA 机器人` | ~1000 | ★★★★ | **首选** | VLA/具身智能方向最佳平衡 |
+| `OpenVLA 机器人` | ~1000 | ★★★ | 补充 | 有补充价值 |
+| `具身智能 算法` | ~1144 | ★ | ❌ 慎用 | 信噪比极差，大量传统算法 |
+| `(具身智能 OR VLA) AND (算法 OR 研究员)` | 5000+ | ★ | ❌ 不用 | 布尔语法不生效 |
+
+### 列表页
+- 候选人信息提取：`document.body.innerText`（全页面文本提取最可靠）
+- CSS Modules 动态命名，没有统一的候选人卡片 class
+- 信息密度：中等，含姓名、年龄、学历、当前公司、期望薪资等
+
+### 详情页（必须访问，用于强推人选深读）
+- **触发方式**：点击候选人姓名，会打开新 tab（非弹窗，与猎聘不同）
+- **新 tab 捕获**：`Promise.all([page.context().waitForEvent('page'), link.click()])` 是可靠方式
+- **姓名定位**：`page.locator('text=XX').first()` 或 `document.querySelector('[title=XXX]')`
+- **内容提取**：`document.body.innerText.substring(0, 8000)` 获取完整简历
+- **resumeId**：在 URL 参数中 `resumeId=XXXX`
+- **tab 管理**：用 `tab-select` 切换到新 tab 提取，`tab-close` 关闭返回
+- ⚠️ 详情页会有大量广告，不影响数据提取
+
+### 已知坑 & 经验
+1. ⚠️ **搜索页必须从左侧导航进入**，直接 URL 打开得到空白 SPA 页面
+2. ⚠️ **不支持 AND/OR/NOT 布尔搜索**，空格 = 松散 OR
+3. snapshot ref 不稳定，优先用 `getByRole` 定位
+4. PowerShell 中 `run-code` 的分号会被截断，复杂 JS 用脚本文件或简化写法
+5. CSS Modules 动态命名，没有统一的候选人卡片 class，`innerText` 提取更可靠
+6. 硬科技/嵌入式方向人才极度稀缺

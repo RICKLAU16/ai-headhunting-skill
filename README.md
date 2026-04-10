@@ -65,7 +65,7 @@
 | 平台 | 状态 | 说明 |
 |------|------|------|
 | 猎聘网 | ✅ 已验证 | 完整页面操作地图，含 React 输入技巧、详情页深读、简历编号提取 |
-| 前程无忧 | ⏳ 部分验证 | 基本入口和搜索按钮已确认，详情操作待补充 |
+| 前程无忧 | ✅ 已验证 | 完整页面操作地图，含 SPA 导航技巧、新 Tab 详情页、搜索词效果对比 |
 | Boss 直聘 | ⏳ 待补充 | 平台操作地图待实战验证后写入 |
 
 ---
@@ -132,9 +132,13 @@ ai-headhunting/
 
 ### 前程无忧
 
-**非 React 组件**：搜索框可直接 `fill` 输入，比猎聘简单。
+**SPA 导航**：搜索页必须从工作台左侧导航「人才搜索」进入，直接 URL 打开会得到空白页面。
 
-**详情页新 Tab**：点击候选人姓名会打开新标签页（非弹窗），需用 `tab-select` / `tab-close` 管理。
+**非 React 组件**：搜索框可直接 `fill` 输入，比猎聘简单。搜索按钮用 `page.getByRole('button', {name: '搜索'}).click()` 最可靠。
+
+**不支持布尔搜索**：51job 不支持 AND/OR/NOT 语法，空格 = 松散 OR。搜索词应控制在 2-3 个核心词。
+
+**详情页新 Tab**：点击候选人姓名会打开新标签页（非弹窗），需用 `tab-select` / `tab-close` 管理，`Promise.all([waitForEvent('page'), click])` 捕获新 tab。
 
 **CSS Modules 动态命名**：没有统一的候选人卡片 class，`innerText` 提取更可靠。
 
@@ -170,4 +174,4 @@ ai-headhunting/
 
 ## 致谢
 
-本 Skill 基于 [WorkBuddy](https://www.codebuddy.cn/) + agent-browser 能力构建，实战验证于猎聘网企业端。
+本 Skill 基于 [WorkBuddy](https://www.codebuddy.cn/) + playwright-cli 能力构建，实战验证于猎聘网企业端和前程无忧企业端。
