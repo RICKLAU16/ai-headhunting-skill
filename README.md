@@ -51,8 +51,8 @@
 
 ```
 ### 曾** | P1 推荐
-- 简历编号：9668929d2966R4d744e42b56f
-- 详情链接：https://lpt.liepin.com/cvview/showresumedetail?resIdEncode=9668929d2966R4d744e42b56f
+- 简历编号：966XXXXXXXXXXX56f
+- 详情链接：https://lpt.liepin.com/cvview/showresumedetail?resIdEncode=966XXXXXXXXXXX56f
 - 当前：清宝引擎 · VLA算法工程师
 - 关键匹配：3年VLA落地经验，主导端到端视觉-语言-动作模型
 - 风险点：近两份工作平均在职不足1年；期望薪资超预算
