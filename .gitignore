@@ -1,0 +1,9 @@
+node_modules/
+_skillhub_meta.json
+*.zip
+.DS_Store
+
+# 平台记忆个人数据（保留模板文件）
+references/memory/liepin.md
+references/memory/51job.md
+references/memory/zhipin.md

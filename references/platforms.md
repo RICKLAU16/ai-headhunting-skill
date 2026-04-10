@@ -1,0 +1,130 @@
+# 平台配置
+
+## 猎聘网（liepin.com）
+
+### 基本导航
+- 企业端首页：`https://lpt.liepin.com`
+- 搜索人才页面：`https://lpt.liepin.com/search`（⚠️ 不是 `/resume/search`，那个会 404）
+- 首页有「搜索人才」链接，可直接点击跳转到 `/search`
+
+### 登录
+- 必须登录才能搜索人才，未登录时首页只显示「登录/注册」
+- 登录方式：手机扫码或验证码
+- agent-browser 操作：需用 `--headed` 模式打开浏览器让用户手动登录
+- 登录后页面顶部会出现用户名 +「搜索人才」入口
+
+### 搜索与筛选
+- 主搜索栏：顶部居中长文本输入框，class 为 `.searchInput--KgDn1`
+- ⚠️ **React 受控组件输入技巧**：不能直接 `fill` 或设 `input.value`，必须用 `nativeInputValueSetter`：
+```js
+const el = document.querySelector('.searchInput--KgDn1');
+const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+setter.call(el, '搜索词');
+el.dispatchEvent(new Event('input', {bubbles: true}));
+el.dispatchEvent(new Event('change', {bubbles: true}));
+```
+- 城市筛选：主搜索栏下方城市标签
+- 经验筛选：不限/在校应届/1-3年/3-5年/5-10年/自定义
+- 学历筛选：不限/本科/硕士/博士博士后等
+- 搜索按钮：遍历 `document.querySelectorAll('button')` 找 `textContent.trim() === '搜索'`，用 JS eval 点击比 `click @ref` 更可靠：
+```js
+Array.from(document.querySelectorAll('button')).find(b => b.textContent.trim() === '搜索')?.click()
+```
+
+### 列表页
+- **候选人卡片容器**：`.resumeCardWrap--FcnzW`，每页 20 张
+- **信息密度：中等偏薄**
+  - 展示：姓名(脱敏)、年龄、工作年限、学历标签、当前公司、职位、过往履历（公司+职位+时间）、教育背景（学校+专业+学历）、期望薪资、期望城市
+  - ⚠️ 工作经历只有一行公司+职位，**缺少项目细节、论文、技术栈深度**
+  - 列表页信息足以做初筛（是否对口），但**不足以输出深度分析报告**
+- **候选人信息提取选择器**：
+  - 简历编号：`card.getAttribute('data-resumeidencode')` — ⚠️ **必须提取**，用于报告输出和后续下载/联系
+  - 详情页 URL：`card.getAttribute('data-resumeurl')` — 完整 URL 含追踪参数；精简版为 `https://lpt.liepin.com/cvview/showresumedetail?resIdEncode=${resumeId}`
+  - 姓名：`.nest-resume-personal-name`
+  - 基本信息（年龄/学历/城市等）：`.nest-resume-personal-detail`
+  - 期望：`.nest-resume-personal-expect`
+  - 技能：`.nest-resume-personal-skills`
+  - 工作经历：`.nest-resume-work-item`（可多个）
+  - 教育经历：`.nest-resume-edu-item`（可多个）
+- **完整提取脚本**：
+```js
+Array.from(document.querySelectorAll('.resumeCardWrap--FcnzW')).map((card, i) => {
+  const resumeId = card.getAttribute('data-resumeidencode') || '';
+  const resumeUrl = `https://lpt.liepin.com/cvview/showresumedetail?resIdEncode=${resumeId}`;
+  const name = card.querySelector('.nest-resume-personal-name')?.textContent?.trim() || '';
+  const detail = card.querySelector('.nest-resume-personal-detail')?.textContent?.trim() || '';
+  const expect = card.querySelector('.nest-resume-personal-expect')?.textContent?.trim() || '';
+  const skills = card.querySelector('.nest-resume-personal-skills')?.textContent?.trim() || '';
+  const works = Array.from(card.querySelectorAll('.nest-resume-work-item')).map(w => w.textContent?.trim()?.replace(/\s+/g,' ')).join(' | ');
+  const edus = Array.from(card.querySelectorAll('.nest-resume-edu-item')).map(e => e.textContent?.trim()?.replace(/\s+/g,' ')).join(' | ');
+  return {i: i+1, resumeId, resumeUrl, name, detail, expect, skills, works, edus};
+})
+```
+
+### 分页
+- 分页按钮 class：`.ant-lpt-pagination-item-N`（N 为页码，从 1 开始）
+- 当前页会加上 active 状态 class
+- 点击第 N 页：`document.querySelector('.ant-lpt-pagination-item-N')?.click()`
+- ⚠️ 翻页状态会被保留：点击搜索按钮后可能自动跳到之前浏览的页码
+
+### 详情页（必须访问，用于强推人选深读）
+- **触发条件**：初筛标记为「强推」或「可联系」的候选人
+- **触发方式**：点击 `.resumeCardContent--A03AZ`（卡片内容区域），非整个 `.resumeCardWrap`
+- **展现形式**：页面内 Modal 弹窗，URL 加 `#preview`，不跳转新页面
+- **详情容器**：`.resume-detail-modal-wrap`（ant-lpt-modal-wrap）
+- **内容提取**：`document.querySelector('.resume-detail-modal-wrap').innerText`
+  - 包含：完整项目描述、个人贡献、量化业绩、技术创新点、教育详情
+  - 信息量远超列表页，**强推人选必须进详情页阅读**
+- **操作流程**：
+  1. 点击候选人卡片内容区域 `.resumeCardContent--A03AZ`
+  2. 等待 2-3 秒让弹窗加载
+  3. 提取详情：`document.querySelector('.resume-detail-modal-wrap').innerText`
+  4. 内容可能较长，分段提取：`.substring(0, 3000)` / `.substring(3000, 6000)`
+  5. 关闭弹窗：`document.querySelector('.resume-detail-modal-wrap .ant-lpt-modal-close')?.click()`
+  6. 等待 2-3 秒后继续下一位
+- ⚠️ **注意事项**：
+  - 关闭弹窗后分页器可能消失，需重新搜索或翻页
+  - 连续快速点击多张卡片可能触发反爬，建议每次间隔 2-3 秒
+  - 部分候选人详情需「获取简历」权限，可能需要额外操作
+
+### 已知坑 & 经验
+1. `agent-browser click @ref` 的 ref 在页面变化后会失效，**优先用 JS eval 操作**
+2. `agent-browser fill` 对 React 受控组件无效，必须用 nativeInputValueSetter
+3. `agent-browser snapshot -i` 可获取交互元素列表，但输出可能被截断
+4. 页面加载后用 `agent-browser wait --load networkidle` 等待完成
+5. 搜索按钮点击后需要等待 2-3 秒让结果渲染
+6. 猎聘搜索结果总数不精确显示，只能通过分页估算
+7. CSS 选择器中的 hash 后缀（如 `--FcnzW`、`--KgDn1`）可能在猎聘发版后变化，如选择器失效需重新 snapshot 确认
+8. **直接用 resumeUrl 打开详情页会触发付费墙**（「今日简历查看数已达上限」），只能通过搜索结果页点击卡片弹窗查看详情，不能走独立 URL
+
+### 平台自带 AI 工具
+- 猎聘「AI快读」：可批量快读最多1000份简历
+- 建议：可作为粗筛前置步骤，再用本 SOP 精筛
+- 局限：通用 AI 可能不理解 VLA/Diffusion Policy 等细分领域关键词
+
+---
+
+## Boss直聘（zhipin.com）
+
+*待补充：如需使用 Boss 直聘，请在此添加页面操作地图。*
+
+---
+
+## 前程无忧（51job.com）
+
+**企业端入口：** `https://ehire.51job.com/`
+
+### 基本导航
+- 企业端首页：`https://ehire.51job.com/`
+- 登录后进入人才搜索页面
+
+### 登录
+- 必须登录才能搜索人才
+- 登录方式：账号密码 / 手机验证码
+- agent-browser 操作：需用 `--headed` 模式打开浏览器让用户手动登录
+
+### 页面操作地图
+
+*待实战验证后补充：选择器、搜索框操作、候选人卡片结构、详情页访问方式、分页逻辑等。*
+
+> 首次使用前程无忧执行寻访时，需通过 snapshot 和 eval 探索页面结构，将发现的选择器和操作方式记录于此。
