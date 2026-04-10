@@ -92,14 +92,18 @@
 
 ```
 ai-headhunting/
-├── SKILL.md                  # Skill 主文件（流程定义 + 报告规范 + 自学习规则）
+├── SKILL.md                  # Skill 主文件（流程定义 + 报告规范 + 自学习 Phase 5）
 ├── README.md                 # 本文件
 ├── LICENSE                   # MIT License
-├── .gitignore                # Git 忽略规则（memory/ 和本地元数据不追踪）
+├── .gitignore                # Git 忽略规则
 ├── references/
 │   ├── platforms.md          # 各平台页面操作地图（选择器、输入技巧、已知坑）
 │   ├── age-ranges.md         # 年龄段与工作经验对照表
 │   ├── self-learning.md      # 自学习进化方案（架构 + 模块设计 + 实施路径）
+│   ├── operation-logs-format.md  # 执行日志格式规范
+│   ├── positions-format.md   # 岗位库格式规范
+│   ├── operation_logs.jsonl  # 执行日志（自动积累，不入 Git）
+│   ├── positions.jsonl       # 岗位库（自动积累，不入 Git）
 │   └── memory/               # 平台自学习记忆（自动积累，不入 Git）
 │       ├── _TEMPLATE.md      # 新平台记忆文件模板
 │       ├── liepin.md         # 猎聘网（自动生成）
@@ -108,7 +112,7 @@ ai-headhunting/
 └── _skillhub_meta.json       # Skill Hub 元数据（不入 Git）
 ```
 
-> `memory/` 目录存放各平台的自动学习记忆，包含验证次数、搜索词效果等使用数据，属于个人数据，不纳入版本控制。首次使用时自动生成。
+> `memory/`、`operation_logs.jsonl`、`positions.jsonl` 存放个人使用数据（验证次数、搜索词效果、执行记录），属于个人数据，不纳入版本控制，首次使用时自动生成。
 
 ---
 

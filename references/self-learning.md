@@ -175,7 +175,15 @@ _最后更新：2026-04-10_
 
 ---
 
-## 五、更新机制
+## 五、数据源文件
+
+| 文件 | 路径 | 用途 | 格式规范 |
+|------|------|------|---------|
+| 平台记忆文件 | `references/memory/<platform>.md` | 选择器命中率、已知坑、搜索词效果 | 见 `references/memory/liepin.md` |
+| 执行日志 | `references/operation_logs.jsonl` | 每次 session 完整轨迹，月度审计数据源 | 见 `references/operation-logs-format.md` |
+| 岗位库 | `references/positions.jsonl` | 按岗位记录历史搜索词效果，下次推荐参考 | 见 `references/positions-format.md` |
+
+
 
 ### 增量更新（每次寻访后自动）
 
@@ -211,25 +219,17 @@ _最后更新：2026-04-10_
 
 ---
 
-## 六、SKILL.md 改动
+## 六、SKILL.md 改动摘要
 
-在 SKILL.md 的寻访流程中新增 Phase 5：
+SKILL.md Phase 5 已更新为完整的自学习执行规范，包含三大写入任务：
 
-```markdown
-### Phase 5：自学习进化（每次寻访后自动执行）
+1. **更新平台记忆文件（memory/）** — 选择器命中率、已知坑、搜索词效果
+2. **写入执行日志（operation_logs.jsonl）** — 每次 session 完整记录，含耗时/结果数/推荐数量/选择器失败/新发现
+3. **更新岗位库（positions.jsonl）** — 追加搜索词历史，usage_count +1，last_used 更新
 
-**完成后必须执行，不可跳过。**
-
-1. 回顾本次所有 agent-browser 交互，提取以下信息：
-   - 选择器命中率（哪些选择器正常/失效）
-   - 操作失败记录（哪些操作方式无效，改用什么替代方案）
-   - 搜索词效果（每轮搜索词 → 结果数 → 匹配度评估）
-   - 新发现的坑或页面行为变化
-2. 读取本次使用平台的记忆文件：`references/memory/<platform>.md`
-3. 按去重规则写入增量学习记录
-4. 更新「当前有效选择器」和统计数字
-5. 若记忆文件不存在，创建并写入首次学习记录
-```
+格式规范详见：
+- `references/operation-logs-format.md`
+- `references/positions-format.md`
 
 ---
 
