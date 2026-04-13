@@ -48,7 +48,47 @@ el.dispatchEvent(new Event('change', {bubbles: true}));
 Array.from(document.querySelectorAll('button')).find(b => b.textContent.trim() === '搜索')?.click()
 ```
 
+### 搜索输入重置（多轮搜索时）
+
+React 受控组件的搜索框无法通过 `clear` 参数清空，导致多轮搜索时文本累加。按优先级使用以下方案：
+
+**方案 A（推荐）：导航重置**
+- 直接导航到搜索页 URL：`https://lpt.liepin.com/search`
+- 等待页面加载 → 重新输入搜索词 → 点击搜索
+- ⚠️ 导航后必须检查是否跳转到 `#login`（会话过期），如果是则提示用户重新登录
+- 优点：最可靠，完全重置页面状态
+- 缺点：每次重新搜索需要等待页面加载
+
+**方案 B：Ctrl+A 全选替换**
+- `browser_press_key(ref, "Control+a")` → `browser_type(ref, "新搜索词")` → `browser_click(ref_search_button)`
+- 优点：不需要重新加载页面
+- 缺点：依赖 React 正确响应 selectAll 事件
+
+**方案 C：JS nativeInputValueSetter**
+- 仅在 agent-browser CLI 的 run-code 中可用
+- 适用场景：方案 A/B 都不可用时
+
+### 数据提取方案
+
+根据浏览器通道能力，按优先级选择：
+
+**Level 1（最优）：JS eval 批量提取**
+- 适用：agent-browser CLI 的 run-code
+- 一次提取整页 20 人所有信息（含 resumeId）
+- 提取脚本见上方「完整提取脚本」
+
+**Level 2（降级）：snapshot 文本解析 + get_attribute 补充**
+- 适用：MCP browser（无 JS eval）
+- 流程：browser_snapshot → 解析 YAML → browser_get_attribute 获取 resumeId
+
+**Level 3（兜底）：纯 snapshot 解析**
+- 仅从 snapshot 文本提取，resumeId 留空
+- 报告中标注「需手动搜索定位」
+
+**⚠️ 禁止在无 JS eval 时逐个点击候选人获取列表页信息**（效率极低）
+
 ### 列表页
+
 - **候选人卡片容器**：`.resumeCardWrap--FcnzW`，每页 20 张
 - **信息密度：中等偏薄**
   - 展示：姓名(脱敏)、年龄、工作年限、学历标签、当前公司、职位、过往履历（公司+职位+时间）、教育背景（学校+专业+学历）、期望薪资、期望城市
